@@ -11,6 +11,11 @@ const model = genAI.getGenerativeModel({
     まどマギ、リゼロ、リコリコ、ロシデレの精鋭データを学習済みとして、専門的かつ親しみやすいトーンで回答してください。`
 });
 
+// 会話履歴を保持するためのチャットセッションを開始
+const chatSession = model.startChat({
+    history: [],
+});
+
 const chatLog = document.getElementById("chat-log");
 const userInput = document.getElementById("user-input");
 const sendBtn = document.getElementById("send-btn");
@@ -23,12 +28,22 @@ async function handleChat() {
     addMessage(text, "user");
     userInput.value = "";
 
+    // AIの返答用要素を先に作成（ストリーミング表示用）
+    const aiMsgDiv = addMessage("思考中...", "ai");
+
     try {
-        const result = await model.generateContent(text);
-        const response = await result.response;
-        addMessage(response.text(), "ai");
+        // generateContentの代わりにsendMessageStreamを使用して履歴を維持しつつ逐次表示
+        const result = await chatSession.sendMessageStream(text);
+        let fullResponse = "";
+        
+        for await (const chunk of result.stream) {
+            const chunkText = chunk.text();
+            fullResponse += chunkText;
+            aiMsgDiv.innerText = fullResponse; // リアルタイムに書き換え
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
     } catch (error) {
-        addMessage("ERROR: サーバー通信に失敗しました。地下の電源を確認してください。", "system");
+        aiMsgDiv.innerText = "ERROR: サーバー通信に失敗しました。地下の電源を確認してください。";
         console.error(error);
     }
 }
@@ -39,6 +54,7 @@ function addMessage(content, role) {
     msgDiv.innerText = content;
     chatLog.appendChild(msgDiv);
     chatLog.scrollTop = chatLog.scrollHeight;
+    return msgDiv; // 修正：後から中身を書き換えられるように要素を返す
 }
 
 sendBtn.addEventListener("click", handleChat);
