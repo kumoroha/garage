@@ -1,28 +1,42 @@
-// 読み込み元をブラウザで最も安定して動く形式に変更
-import { GoogleGenerativeAI } from "https://jspm.dev/@google/generative-ai";
+// 【重要】import文はすべて削除しました。HTML側で読み込むため不要です。
 
-async function init() {
-    // 1. サイトを開いた瞬間にキーを入れる
+async function startSystem() {
+    // 1. サイトを開いた瞬間に認証キーを要求
     const API_KEY = prompt("20.25 SYSTEM: 地下サーバーの認証キーを入力してください。"); 
 
     if (!API_KEY) {
-        alert("CRITICAL ERROR: 認証キーがありません。");
+        alert("CRITICAL ERROR: 認証キーが入力されていません。");
         return;
     }
 
     try {
-        const genAI = new GoogleGenerativeAI(API_KEY);
+        // HTML側で読み込んだライブラリを使用（window.googleGenerativeAi を使う）
+        const genAI = new window.googleGenerativeAi.GoogleGenerativeAI(API_KEY);
         
-        // 2026年現在、最も安定しているモデル名（1.5-flash）
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        // モデルの設定
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-1.5-flash" 
+        });
+
+        // チャットセッションの設定（ここで「まどマギ・リゼロ」などの設定を叩き込む）
+        const chat = model.startChat({
+            history: [
+                {
+                    role: "user",
+                    parts: [{ text: "指令：あなたは地下ガレージの管理AIです。まどマギ、リゼロ、リコリコ、ロシデレのデータを元に、XE7740サーバーとして振る舞ってください。" }],
+                },
+                {
+                    role: "model",
+                    parts: [{ text: "了解。全ユニットオンライン。アーカイブ展開完了。オペレーター、指示をどうぞ。" }],
+                }
+            ],
+        });
 
         const chatLog = document.getElementById("chat-log");
         const userInput = document.getElementById("user-input");
         const sendBtn = document.getElementById("send-btn");
 
-        // 初期化メッセージ（これが出れば成功）
-        console.log("System Online: XE7740");
-
+        // メッセージ送信処理
         async function handleChat() {
             const text = userInput.value;
             if (!text) return;
@@ -31,10 +45,11 @@ async function init() {
             userInput.value = "";
 
             try {
-                const result = await model.generateContent(text);
+                const result = await chat.sendMessage(text);
                 const response = await result.response;
                 addMessage(response.text(), "ai");
             } catch (error) {
+                console.error(error);
                 addMessage(`SYSTEM ERROR: ${error.message}`, "system");
             }
         }
@@ -52,10 +67,13 @@ async function init() {
             if (e.key === "Enter") handleChat();
         });
 
+        console.log("SYSTEM READY: XE7740 is Online.");
+
     } catch (err) {
-        alert("システム起動失敗: " + err.message);
+        alert("システム起動エラー: " + err.message);
+        console.error(err);
     }
 }
 
-// 実行
-init();
+// ページ読み込み完了時に実行
+window.onload = startSystem;
