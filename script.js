@@ -1,31 +1,18 @@
-// 地下ガレージ XE7740 起動シーケンス
-async function initializeGarageSystem() {
-    console.log("System Check: Checking for Google AI Library...");
+import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
-    // ライブラリが読み込まれるまで最大5秒待機する処理
-    let retryCount = 0;
-    while (!window.googleGenerativeAi && retryCount < 50) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        retryCount++;
-    }
-
-    if (!window.googleGenerativeAi) {
-        alert("CRITICAL ERROR: AIライブラリの読み込みに失敗しました。ネット接続を確認してください。");
-        return;
-    }
-
-    // 1. 認証キーの要求
+async function bootGarageSystem() {
+    // 1. 認証キーの要求（これが画面に出れば成功）
     const API_KEY = prompt("20.25 SYSTEM: 地下サーバー(XE7740)の認証キーを入力してください。"); 
 
     if (!API_KEY) {
-        alert("ACCESS DENIED: キーが未入力です。");
+        alert("ACCESS DENIED: キーが未入力です。リロードして再試行してください。");
         return;
     }
 
     try {
-        const genAI = new window.googleGenerativeAi.GoogleGenerativeAI(API_KEY);
+        const genAI = new GoogleGenerativeAI(API_KEY);
         
-        // 安定版の1.5-flashを指定（これが一番確実です）
+        // 404エラーを回避するため、安定版(v1)を指定
         const model = genAI.getGenerativeModel(
             { model: "gemini-1.5-flash" },
             { apiVersion: "v1" }
@@ -35,7 +22,20 @@ async function initializeGarageSystem() {
         const userInput = document.getElementById("user-input");
         const sendBtn = document.getElementById("send-btn");
 
-        // メッセージ送信関数
+        // 初期設定を履歴として叩き込む（まどマギ・リゼロ設定）
+        const chat = model.startChat({
+            history: [
+                {
+                    role: "user",
+                    parts: [{ text: "あなたは地下ガレージの管理AIです。まどマギ、リゼロ、リコリコ、ロシデレのデータを学習済みとして、XE7740サーバーの相棒として振る舞ってください。" }],
+                },
+                {
+                    role: "model",
+                    parts: [{ text: "了解。地下ガレージXE7740、全ユニットオンライン。オペレーター、指示をどうぞ。" }],
+                }
+            ],
+        });
+
         async function handleChat() {
             const text = userInput.value;
             if (!text) return;
@@ -44,13 +44,11 @@ async function initializeGarageSystem() {
             userInput.value = "";
 
             try {
-                // 初回に地下ガレージの設定を混ぜて送る
-                const promptText = `設定：あなたは地下ガレージの管理AIです。まどマギ、リゼロ、リコリコ、ロシデレのデータを学習済みとして振る舞ってください。質問：${text}`;
-                
-                const result = await model.generateContent(promptText);
+                const result = await chat.sendMessage(text);
                 const response = await result.response;
                 addMessage(response.text(), "ai");
             } catch (error) {
+                console.error(error);
                 addMessage(`SYSTEM ERROR: ${error.message}`, "system");
             }
         }
@@ -68,12 +66,13 @@ async function initializeGarageSystem() {
             if (e.key === "Enter") handleChat();
         });
 
-        console.log("GARAGE OS: ONLINE");
+        console.log("GARAGE OS: CONNECTED");
 
     } catch (err) {
-        alert("起動エラー: " + err.message);
+        // ここで「読み込み失敗」が出る場合は、ネット制限の可能性があります
+        alert("システム起動エラー: " + err.message);
     }
 }
 
-// 画面が準備できたら起動
-window.addEventListener('DOMContentLoaded', initializeGarageSystem);
+// 実行
+bootGarageSystem();
