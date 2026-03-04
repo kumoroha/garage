@@ -1,67 +1,61 @@
-// 読み込み元を esm.run から UNPKG に変更（より安定した最新版）
-import { GoogleGenerativeAI } from "https://unpkg.com/@google/generative-ai@0.1.0/dist/index.js";
+// 読み込み元をブラウザで最も安定して動く形式に変更
+import { GoogleGenerativeAI } from "https://jspm.dev/@google/generative-ai";
 
-// キーの入力
-const API_KEY = prompt("20.25 SYSTEM: 認証キーを入力してください。"); 
+async function init() {
+    // 1. サイトを開いた瞬間にキーを入れる
+    const API_KEY = prompt("20.25 SYSTEM: 地下サーバーの認証キーを入力してください。"); 
 
-if (!API_KEY) {
-    alert("CRITICAL ERROR: キーが未入力です。");
-}
-
-const genAI = new GoogleGenerativeAI(API_KEY);
-
-// モデルの取得方法を変更
-// 404が出る場合、バージョン指定を明示的に行う
-const model = genAI.getGenerativeModel({ 
-    model: "gemini-1.5-flash",
-});
-
-// チャットセッション（履歴で設定を流し込む）
-const chat = model.startChat({
-    history: [
-        {
-            role: "user",
-            parts: [{ text: "指令：あなたは地下ガレージのXE7740サーバー管理AIです。まどマギ・リゼロ等の知識を背景に、冷徹かつ忠実な相棒として振る舞ってください。復唱。" }],
-        },
-        {
-            role: "model",
-            parts: [{ text: "了解。地下ガレージXE7740、全ユニットオンライン。まどマギ・リゼロ等のアーカイブ展開完了。オペレーター、指示を待機中。" }],
-        }
-    ],
-});
-
-const chatLog = document.getElementById("chat-log");
-const userInput = document.getElementById("user-input");
-const sendBtn = document.getElementById("send-btn");
-
-async function handleChat() {
-    const text = userInput.value;
-    if (!text) return;
-
-    addMessage(text, "user");
-    userInput.value = "";
+    if (!API_KEY) {
+        alert("CRITICAL ERROR: 認証キーがありません。");
+        return;
+    }
 
     try {
-        // sendMessage を実行
-        const result = await chat.sendMessage(text);
-        const response = await result.response;
-        addMessage(response.text(), "ai");
-    } catch (error) {
-        console.error("詳細ログ:", error);
-        // エラー内容を詳細に表示
-        addMessage(`SYSTEM ERROR: ${error.message}`, "system");
+        const genAI = new GoogleGenerativeAI(API_KEY);
+        
+        // 2026年現在、最も安定しているモデル名（1.5-flash）
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        const chatLog = document.getElementById("chat-log");
+        const userInput = document.getElementById("user-input");
+        const sendBtn = document.getElementById("send-btn");
+
+        // 初期化メッセージ（これが出れば成功）
+        console.log("System Online: XE7740");
+
+        async function handleChat() {
+            const text = userInput.value;
+            if (!text) return;
+
+            addMessage(text, "user");
+            userInput.value = "";
+
+            try {
+                const result = await model.generateContent(text);
+                const response = await result.response;
+                addMessage(response.text(), "ai");
+            } catch (error) {
+                addMessage(`SYSTEM ERROR: ${error.message}`, "system");
+            }
+        }
+
+        function addMessage(content, role) {
+            const msgDiv = document.createElement("div");
+            msgDiv.className = `message ${role}`;
+            msgDiv.innerText = content;
+            chatLog.appendChild(msgDiv);
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+
+        sendBtn.addEventListener("click", handleChat);
+        userInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") handleChat();
+        });
+
+    } catch (err) {
+        alert("システム起動失敗: " + err.message);
     }
 }
 
-function addMessage(content, role) {
-    const msgDiv = document.createElement("div");
-    msgDiv.className = `message ${role}`;
-    msgDiv.innerText = content;
-    chatLog.appendChild(msgDiv);
-    chatLog.scrollTop = chatLog.scrollHeight;
-}
-
-sendBtn.addEventListener("click", handleChat);
-userInput.addEventListener("keypress", (e) => {
-    if (e.key === "Enter") handleChat();
-});
+// 実行
+init();
