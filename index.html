@@ -66,38 +66,51 @@
         addMessage("認証成功。5090×8枚 起動完了。指示をどうぞ。", "ai");
     }
 
-    async function handleChat() {
-        const text = userInput.value.trim();
-        if (!text || !API_KEY) return;
+async function handleChat() {
+            const text = userInput.value.trim();
+            if (!text || !API_KEY) return;
 
-        addMessage(text, "user");
-        userInput.value = "";
+            addMessage(text, "user");
+            userInput.value = "";
 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY.trim()}`;
+            // キーの空白を完全に排除
+            const cleanKey = API_KEY.trim();
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${cleanKey}`;
 
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [{ 
-                            text: `設定：地下ガレージの管理AI。まどマギ、リゼロ、リコリコ、ロシデレに詳しい。質問：${text}` 
-                        }]
-                    }]
-                })
-            });
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{ text: `設定：地下ガレージの管理AI。まどマギ、リゼロ、リコリコ、ロシデレに詳しい。質問：${text}` }]
+                        }],
+                        // 安全フィルターをすべてオフにする設定（学タブ対策）
+                        safetySettings: [
+                            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+                            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+                            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+                            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+                        ]
+                    })
+                });
 
-            const data = await response.json();
-            if (data.candidates) {
-                addMessage(data.candidates[0].content.parts[0].text, "ai");
-            } else {
-                addMessage("ERROR: キーが無効か、通信エラーです。", "system");
+                const data = await response.json();
+                
+                if (data.error) {
+                    // 何が悪いのか具体的に表示する
+                    addMessage(`API ERROR: ${data.error.message}`, "system");
+                } else if (data.candidates && data.candidates[0].content.parts[0].text) {
+                    addMessage(data.candidates[0].content.parts[0].text, "ai");
+                } else if (data.promptFeedback) {
+                    addMessage("SYSTEM ERROR: 内容が安全フィルターに接触しました。", "system");
+                } else {
+                    addMessage("ERROR: サーバーからの応答が不正です。", "system");
+                }
+            } catch (error) {
+                addMessage("SYSTEM ERROR: 通信が完全に遮断されました。", "system");
             }
-        } catch (error) {
-            addMessage("SYSTEM ERROR: 通信遮断。", "system");
-        }
-    }
+        }。
 
     function addMessage(content, role) {
         const msgDiv = document.createElement("div");
