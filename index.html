@@ -5,105 +5,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>20.25 BASEMENT GARAGE</title>
     <style>
-        /* デザイン：地下ガレージ・サーバーOS風 */
-        body {
-            background-color: #050505;
-            color: #00ff41;
-            font-family: 'Consolas', 'Courier New', monospace;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
-        }
-        #header {
-            padding: 10px 20px;
-            background: #111;
-            border-bottom: 2px solid #00ff41;
-            font-size: 0.9em;
-            display: flex;
-            justify-content: space-between;
-        }
-        #chat-log {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            background: linear-gradient(180deg, rgba(0,20,0,1) 0%, rgba(0,5,0,1) 100%);
-        }
-        .message {
-            margin-bottom: 15px;
-            line-height: 1.5;
-            max-width: 85%;
-            word-wrap: break-word;
-        }
-        .user {
-            color: #ffffff;
-            border-left: 3px solid #ffffff;
-            padding-left: 10px;
-        }
-        .ai {
-            color: #00ff41;
-            border-left: 3px solid #00ff41;
-            padding-left: 10px;
-            white-space: pre-wrap;
-        }
-        .system {
-            color: #ff3333;
-            font-weight: bold;
-            background: rgba(255,0,0,0.1);
-            padding: 5px;
-        }
-        #input-area {
-            display: flex;
-            padding: 20px;
-            background: #111;
-            border-top: 1px solid #333;
-        }
-        input {
-            flex: 1;
-            background: #000;
-            border: 1px solid #00ff41;
-            color: #00ff41;
-            padding: 12px;
-            outline: none;
-            font-size: 1em;
-        }
-        button {
-            background: #00ff41;
-            color: #000;
-            border: none;
-            padding: 0 25px;
-            margin-left: 10px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        button:hover { background: #00cc33; }
+        body { background: #050505; color: #00ff41; font-family: monospace; margin: 0; padding: 10px; }
+        #header { border-bottom: 2px solid #00ff41; padding: 5px; margin-bottom: 10px; font-size: 0.8em; }
         
-        /* スクロールバーのデザイン */
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-thumb { background: #00ff41; }
+        /* 入力エリアを上に持ってくる */
+        #input-area { 
+            display: flex; 
+            margin-bottom: 20px; 
+            background: #111; 
+            padding: 10px; 
+            border: 1px solid #333;
+        }
+        input { 
+            flex: 1; 
+            background: #000; 
+            border: 1px solid #00ff41; 
+            color: #00ff41; 
+            padding: 10px; 
+            font-size: 16px; /* 学タブでズームされないためのサイズ */
+        }
+        button { background: #00ff41; color: #000; border: none; padding: 0 15px; margin-left: 5px; cursor: pointer; font-weight: bold; }
+
+        #chat-log { 
+            height: 60vh; 
+            overflow-y: auto; 
+            background: rgba(0,20,0,0.5); 
+            padding: 10px; 
+            border: 1px solid #222;
+        }
+        .message { margin-bottom: 10px; padding: 8px; border-radius: 4px; line-height: 1.4; }
+        .user { color: #fff; border-left: 3px solid #fff; }
+        .ai { color: #00ff41; border-left: 3px solid #00ff41; white-space: pre-wrap; }
+        .system { color: #ff3333; background: rgba(255,0,0,0.1); }
     </style>
 </head>
 <body>
 
 <div id="header">
-    <span>SYSTEM: XE7740 GARAGE-OS v20.25</span>
-    <span>STATUS: <span id="status">WAITING KEY...</span></span>
-</div>
-
-<div id="chat-log">
-    <div class="message ai">地下ガレージ・サーバー管理システムへようこそ。
-認証キーを入力して、RTX 5090×8枚の演算ユニットを起動してください。</div>
+    XE7740 OS: <span id="status">OFFLINE</span>
 </div>
 
 <div id="input-area">
-    <input type="text" id="user-input" placeholder="指令を入力..." autocomplete="off">
-    <button id="send-btn">SEND</button>
+    <input type="text" id="user-input" placeholder="ここに指令を打つ..." autocomplete="off">
+    <button id="send-btn">送信</button>
+</div>
+
+<div id="chat-log">
+    <div class="message ai">システム待機中... 認証キーを入力してください。</div>
 </div>
 
 <script>
-    // 起動時にキーを取得（学タブの制限を避けるため prompt を使用）
-    const API_KEY = prompt("20.25 SYSTEM: 地下サーバーの認証キー(API KEY)を入力してください。");
+    const API_KEY = prompt("認証キーを貼り付けてください");
     const statusEl = document.getElementById("status");
     const chatLog = document.getElementById("chat-log");
     const userInput = document.getElementById("user-input");
@@ -111,21 +63,16 @@
 
     if (API_KEY) {
         statusEl.innerText = "ONLINE";
-        statusEl.style.color = "#00ff41";
+        addMessage("認証成功。5090×8枚 起動完了。指示をどうぞ。", "ai");
     }
 
     async function handleChat() {
         const text = userInput.value.trim();
-        if (!text) return;
-        if (!API_KEY) {
-            alert("キーがありません。ページを更新して入力してください。");
-            return;
-        }
+        if (!text || !API_KEY) return;
 
         addMessage(text, "user");
         userInput.value = "";
 
-        // 学タブのフィルターを通りやすくするため、ライブラリを使わず直接fetchで叩く
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY.trim()}`;
 
         try {
@@ -135,24 +82,20 @@
                 body: JSON.stringify({
                     contents: [{
                         parts: [{ 
-                            text: `指令：あなたは地下ガレージの管理AIです。まどマギ、リゼロ、リコリコ、ロシデレの精鋭データを学習済みとして、XE7740（5090x8搭載）サーバーの相棒として振る舞ってください。親しみやすくもプロフェッショナルな口調で。質問：${text}` 
+                            text: `設定：地下ガレージの管理AI。まどマギ、リゼロ、リコリコ、ロシデレに詳しい。質問：${text}` 
                         }]
                     }]
                 })
             });
 
             const data = await response.json();
-
-            if (data.error) {
-                addMessage(`API ERROR: ${data.error.message}\n(キーが間違っているか、制限されています)`, "system");
-            } else if (data.candidates && data.candidates[0].content.parts[0].text) {
+            if (data.candidates) {
                 addMessage(data.candidates[0].content.parts[0].text, "ai");
             } else {
-                addMessage("ERROR: 応答を解析できませんでした。", "system");
+                addMessage("ERROR: キーが無効か、通信エラーです。", "system");
             }
         } catch (error) {
-            addMessage("SYSTEM ERROR: 通信が遮断されました。学タブの制限の可能性があります。", "system");
-            console.error(error);
+            addMessage("SYSTEM ERROR: 通信遮断。", "system");
         }
     }
 
@@ -165,9 +108,7 @@
     }
 
     sendBtn.addEventListener("click", handleChat);
-    userInput.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") handleChat();
-    });
+    userInput.addEventListener("keypress", (e) => { if (e.key === "Enter") handleChat(); });
 </script>
 
 </body>
