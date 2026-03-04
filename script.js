@@ -11,7 +11,7 @@ const genAI = new GoogleGenerativeAI(API_KEY);
 
 // システムプロンプト（地下ガレージ設定）
 const model = genAI.getGenerativeModel({ 
-    model: "gemini-1.5-flash",
+    model: "gemini-1.5-flash-latest",
     systemInstruction: "あなたは地下ガレージのXE7740（5090x8枚搭載）サーバーの管理AIです。ユーザーは一人暮らしですが、このチャットの向こう側には最強の演算環境がある設定で振る舞ってください。まどマギ、リゼロ、リコリコ、ロシデレの精鋭データを学習済みとして、専門的かつ親しみやすいトーンで回答してください。"
 });
 
