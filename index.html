@@ -2,51 +2,78 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>20.25 BASEMENT-GARAGE UNIT</title>
-    <link rel="stylesheet" href="style.css">
+    <title>20.25 BASEMENT GARAGE</title>
+    <style>
+        /* ここにあなたのCSSをそのまま入れます（短縮して書きます） */
+        body { background: #000; color: #0f0; font-family: 'Courier New', monospace; margin: 0; padding: 20px; }
+        #chat-log { height: 400px; overflow-y: auto; border: 1px solid #0f0; padding: 10px; margin-bottom: 10px; background: rgba(0,20,0,0.9); }
+        .message { margin: 5px 0; padding: 5px; border-radius: 5px; }
+        .user { color: #fff; background: #333; }
+        .ai { color: #0f0; border-left: 3px solid #0f0; padding-left: 10px; }
+        .system { color: #ff0044; font-weight: bold; }
+        input { background: #000; color: #0f0; border: 1px solid #0f0; width: 80%; padding: 10px; }
+        button { background: #0f0; color: #000; border: none; padding: 10px 20px; cursor: pointer; }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <aside class="sidebar">
-            <h2>SYSTEM STATUS</h2>
-            <div class="status-item">
-                <span class="label">UNIT:</span>
-                <span class="value">XE7740-V3</span>
-            </div>
-            <div class="status-item">
-                <span class="label">GPU:</span>
-                <span class="value">RTX 5090 x 8</span>
-            </div>
-            <div class="status-item">
-                <span class="label">VRAM:</span>
-                <span class="value">256GB / 256GB</span>
-            </div>
-            <hr>
-            <div class="archives">
-                <p>TARGET DATA:</p>
-                <ul>
-                    <li>PUELLA MAGI</li>
-                    <li>RE:ZERO</li>
-                    <li>LYCORIS RECOIL</li>
-                    <li>ROSHIDERE</li>
-                </ul>
-            </div>
-        </aside>
+    <h1>BASEMENT GARAGE OS v20.25</h1>
+    <div id="chat-log"></div>
+    <input type="text" id="user-input" placeholder="指令を入力...">
+    <button id="send-btn">SEND</button>
 
-        <main class="chat-area">
-            <header>
-                <h1>BASEMENT-GARAGE TERMINAL <span class="online-dot"></span></h1>
-            </header>
-            <div id="chat-log" class="chat-log">
-                <div class="message system">SYSTEM: Connection Established. Welcome back, Operator.</div>
-            </div>
-            <div class="input-group">
-                <input type="text" id="user-input" placeholder="地下サーバーへコマンドを入力...">
-                <button id="send-btn">SEND</button>
-            </div>
-        </main>
-    </div>
-    <script type="module" src="script.js"></script>
+    <script>
+        const chatLog = document.getElementById("chat-log");
+        const userInput = document.getElementById("user-input");
+        const sendBtn = document.getElementById("send-btn");
+
+        // 1. 起動時にキーを入力
+        const API_KEY = prompt("認証キーを入力してください。");
+
+        async function handleChat() {
+            const text = userInput.value;
+            if (!text || !API_KEY) return;
+
+            addMessage(text, "user");
+            userInput.value = "";
+
+            // 2. ライブラリを使わず、直接Googleに「fetch」で投げる
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{ text: `あなたは地下ガレージの管理AIです。まどマギ、リゼロ、リコリコ、ロシデレの設定で、XE7740サーバーとして答えて。質問：${text}` }]
+                        }]
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.candidates && data.candidates[0].content.parts[0].text) {
+                    addMessage(data.candidates[0].content.parts[0].text, "ai");
+                } else {
+                    addMessage("ERROR: レスポンスが空です。キーを確認してください。", "system");
+                }
+            } catch (error) {
+                addMessage(`SYSTEM ERROR: 通信がブロックされました。`, "system");
+            }
+        }
+
+        function addMessage(content, role) {
+            const msgDiv = document.createElement("div");
+            msgDiv.className = `message ${role}`;
+            msgDiv.innerText = content;
+            chatLog.appendChild(msgDiv);
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+
+        sendBtn.addEventListener("click", handleChat);
+        userInput.addEventListener("keypress", (e) => { if (e.key === "Enter") handleChat(); });
+
+        if(API_KEY) addMessage("SYSTEM ONLINE. 地下ガレージ接続完了。", "system");
+    </script>
 </body>
 </html>
