@@ -1,42 +1,27 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+// importは使いません（HTMLで読み込むため）
 
-async function startSystem() {
-    // 1. サイトを開いた瞬間に認証キーを要求
-    const API_KEY = prompt("20.25 SYSTEM: 地下サーバーの認証キーを入力してください。"); 
+async function bootSystem() {
+    const API_KEY = prompt("20.25 SYSTEM: 認証キーを入力してください。"); 
 
     if (!API_KEY) {
-        alert("CRITICAL ERROR: 認証キーが入力されていません。");
+        alert("CRITICAL ERROR: キーが未入力です。");
         return;
     }
 
     try {
-        // ライブラリを使用して初期化
-        const genAI = new GoogleGenerativeAI(API_KEY);
+        // window.googleGenerativeAi を使用
+        const genAI = new window.googleGenerativeAi.GoogleGenerativeAI(API_KEY);
         
-        // モデルの設定（無料枠で最強の1.5-flash）
-        const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash" 
-        });
-
-        // チャットセッションの設定（履歴で性格を叩き込む）
-        const chat = model.startChat({
-            history: [
-                {
-                    role: "user",
-                    parts: [{ text: "指令：あなたは地下ガレージの管理AIです。まどマギ、リゼロ、リコリコ、ロシデレのデータを元に、XE7740サーバーとして振る舞ってください。" }],
-                },
-                {
-                    role: "model",
-                    parts: [{ text: "了解。全ユニットオンライン。アーカイブ展開完了。オペレーター、指示をどうぞ。" }],
-                }
-            ],
-        });
+        // 【ここが最重要】404回避のため、安定版のAPIを指定する
+        const model = genAI.getGenerativeModel(
+            { model: "gemini-1.5-flash" },
+            { apiVersion: "v1" } // ←ここ！テスト版ではなく安定版を指定
+        );
 
         const chatLog = document.getElementById("chat-log");
         const userInput = document.getElementById("user-input");
         const sendBtn = document.getElementById("send-btn");
 
-        // メッセージ送信処理
         async function handleChat() {
             const text = userInput.value;
             if (!text) return;
@@ -45,7 +30,8 @@ async function startSystem() {
             userInput.value = "";
 
             try {
-                const result = await chat.sendMessage(text);
+                // generateContent で直接呼ぶ（一番エラーが起きにくい）
+                const result = await model.generateContent(text);
                 const response = await result.response;
                 addMessage(response.text(), "ai");
             } catch (error) {
@@ -67,13 +53,12 @@ async function startSystem() {
             if (e.key === "Enter") handleChat();
         });
 
-        console.log("SYSTEM READY: XE7740 Online.");
+        console.log("BASEMENT-GARAGE: SYSTEM ONLINE.");
 
     } catch (err) {
-        alert("システム起動エラー: " + err.message);
-        console.error(err);
+        alert("起動エラー: " + err.message);
     }
 }
 
-// 実行
-startSystem();
+// ページ読み込み完了時に実行
+window.onload = bootSystem;
