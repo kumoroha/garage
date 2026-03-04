@@ -1,4 +1,4 @@
-// 【重要】import文はすべて削除しました。HTML側で読み込むため不要です。
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 async function startSystem() {
     // 1. サイトを開いた瞬間に認証キーを要求
@@ -10,15 +10,15 @@ async function startSystem() {
     }
 
     try {
-        // HTML側で読み込んだライブラリを使用（window.googleGenerativeAi を使う）
-        const genAI = new window.googleGenerativeAi.GoogleGenerativeAI(API_KEY);
+        // ライブラリを使用して初期化
+        const genAI = new GoogleGenerativeAI(API_KEY);
         
-        // モデルの設定
+        // モデルの設定（無料枠で最強の1.5-flash）
         const model = genAI.getGenerativeModel({ 
             model: "gemini-1.5-flash" 
         });
 
-        // チャットセッションの設定（ここで「まどマギ・リゼロ」などの設定を叩き込む）
+        // チャットセッションの設定（履歴で性格を叩き込む）
         const chat = model.startChat({
             history: [
                 {
@@ -67,7 +67,7 @@ async function startSystem() {
             if (e.key === "Enter") handleChat();
         });
 
-        console.log("SYSTEM READY: XE7740 is Online.");
+        console.log("SYSTEM READY: XE7740 Online.");
 
     } catch (err) {
         alert("システム起動エラー: " + err.message);
@@ -75,5 +75,5 @@ async function startSystem() {
     }
 }
 
-// ページ読み込み完了時に実行
-window.onload = startSystem;
+// 実行
+startSystem();
