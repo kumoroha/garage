@@ -1,27 +1,41 @@
-// importは使いません（HTMLで読み込むため）
+// 地下ガレージ XE7740 起動シーケンス
+async function initializeGarageSystem() {
+    console.log("System Check: Checking for Google AI Library...");
 
-async function bootSystem() {
-    const API_KEY = prompt("20.25 SYSTEM: 認証キーを入力してください。"); 
+    // ライブラリが読み込まれるまで最大5秒待機する処理
+    let retryCount = 0;
+    while (!window.googleGenerativeAi && retryCount < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        retryCount++;
+    }
+
+    if (!window.googleGenerativeAi) {
+        alert("CRITICAL ERROR: AIライブラリの読み込みに失敗しました。ネット接続を確認してください。");
+        return;
+    }
+
+    // 1. 認証キーの要求
+    const API_KEY = prompt("20.25 SYSTEM: 地下サーバー(XE7740)の認証キーを入力してください。"); 
 
     if (!API_KEY) {
-        alert("CRITICAL ERROR: キーが未入力です。");
+        alert("ACCESS DENIED: キーが未入力です。");
         return;
     }
 
     try {
-        // window.googleGenerativeAi を使用
         const genAI = new window.googleGenerativeAi.GoogleGenerativeAI(API_KEY);
         
-        // 【ここが最重要】404回避のため、安定版のAPIを指定する
+        // 安定版の1.5-flashを指定（これが一番確実です）
         const model = genAI.getGenerativeModel(
             { model: "gemini-1.5-flash" },
-            { apiVersion: "v1" } // ←ここ！テスト版ではなく安定版を指定
+            { apiVersion: "v1" }
         );
 
         const chatLog = document.getElementById("chat-log");
         const userInput = document.getElementById("user-input");
         const sendBtn = document.getElementById("send-btn");
 
+        // メッセージ送信関数
         async function handleChat() {
             const text = userInput.value;
             if (!text) return;
@@ -30,12 +44,13 @@ async function bootSystem() {
             userInput.value = "";
 
             try {
-                // generateContent で直接呼ぶ（一番エラーが起きにくい）
-                const result = await model.generateContent(text);
+                // 初回に地下ガレージの設定を混ぜて送る
+                const promptText = `設定：あなたは地下ガレージの管理AIです。まどマギ、リゼロ、リコリコ、ロシデレのデータを学習済みとして振る舞ってください。質問：${text}`;
+                
+                const result = await model.generateContent(promptText);
                 const response = await result.response;
                 addMessage(response.text(), "ai");
             } catch (error) {
-                console.error(error);
                 addMessage(`SYSTEM ERROR: ${error.message}`, "system");
             }
         }
@@ -53,12 +68,12 @@ async function bootSystem() {
             if (e.key === "Enter") handleChat();
         });
 
-        console.log("BASEMENT-GARAGE: SYSTEM ONLINE.");
+        console.log("GARAGE OS: ONLINE");
 
     } catch (err) {
         alert("起動エラー: " + err.message);
     }
 }
 
-// ページ読み込み完了時に実行
-window.onload = bootSystem;
+// 画面が準備できたら起動
+window.addEventListener('DOMContentLoaded', initializeGarageSystem);
